@@ -1,0 +1,6 @@
+{
+  "name": "Handover HQ",
+  "description": "A robust handover and task management platform with email notifications, dashboard analytics, and role-based access control.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

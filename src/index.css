@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-200 antialiased;
+  }
+}
+
+.glass-morphism {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl;
+}
+
+.glass-card {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl shadow-lg;
+}
+
+.glass-input {
+  @apply bg-white/10 border border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all placeholder-slate-500;
+}
+
+.glass-button-primary {
+  @apply bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95;
+}
+
+.glass-button-secondary {
+  @apply bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-xl transition-all active:scale-95;
+}
