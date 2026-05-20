@@ -123,24 +123,26 @@ export default function App() {
         );
 
         // 2. Listen to User Notifications
-        const nq = query(collection(db, `users/${user.uid}/notifications`), orderBy('createdAt', 'desc'));
-        nUnsubscribe = onSnapshot(nq, 
-          (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-            setNotifications(docs);
-          },
-          (error) => console.error('Notifications listener error:', error)
-        );
+        if (user) {
+          const nq = query(collection(db, `users/${user.uid}/notifications`), orderBy('createdAt', 'desc'));
+          nUnsubscribe = onSnapshot(nq, 
+            (snapshot) => {
+              const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+              setNotifications(docs);
+            },
+            (error) => console.error('Notifications listener error:', error)
+          );
 
-        // 3. Listen to User Profile (for Theme persistence)
-        uUnsubscribe = onSnapshot(doc(db, 'users', user.uid), 
-          (snapshot) => {
-            if (snapshot.exists()) {
-              setAppUser(snapshot.data() as AppUser);
-            }
-          },
-          (error) => console.error('User profile listener error:', error)
-        );
+          // 3. Listen to User Profile (for Theme persistence)
+          uUnsubscribe = onSnapshot(doc(db, 'users', user.uid), 
+            (snapshot) => {
+              if (snapshot.exists()) {
+                setAppUser(snapshot.data() as AppUser);
+              }
+            },
+            (error) => console.error('User profile listener error:', error)
+          );
+        }
       };
 
       setupListeners();
@@ -279,8 +281,8 @@ export default function App() {
       } else {
         const docRef = await addDoc(collection(db, 'handovers'), {
           ...data,
-          creatorId: user.uid,
-          creatorEmail: appUser?.email || user.email || 'guest@hq.local',
+          creatorId: user?.uid || 'guest',
+          creatorEmail: appUser?.email || user?.email || 'guest@hq.local',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -292,17 +294,19 @@ export default function App() {
       setEditingHandover(undefined);
 
       // Add a notification for the current user to show in the bell icon
-      try {
-        await addDoc(collection(db, `users/${user.uid}/notifications`), {
-          userId: user.uid,
-          title: editingHandover ? 'Authorization Updated' : 'New Authorization',
-          message: `Operation "${data.title}" has been successfully ${editingHandover ? 'updated' : 'recorded in HQ'}.`,
-          read: false,
-          type: 'info',
-          createdAt: serverTimestamp()
-        });
-      } catch (err) {
-        console.warn('Silent notification failure:', err);
+      if (user) {
+        try {
+          await addDoc(collection(db, `users/${user.uid}/notifications`), {
+            userId: user.uid,
+            title: editingHandover ? 'Authorization Updated' : 'New Authorization',
+            message: `Operation "${data.title}" has been successfully ${editingHandover ? 'updated' : 'recorded in HQ'}.`,
+            read: false,
+            type: 'info',
+            createdAt: serverTimestamp()
+          });
+        } catch (err) {
+          console.warn('Silent notification failure:', err);
+        }
       }
 
       if (sendEmail) {
@@ -472,7 +476,7 @@ export default function App() {
 
               <AnimatePresence>
                 {isNotificationsOpen && (
-                  <>
+                  <div key="notifications-overlay">
                     <div className="fixed inset-0 z-10" onClick={() => setIsNotificationsOpen(false)} />
                     <motion.div 
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -504,7 +508,7 @@ export default function App() {
                         )}
                       </div>
                     </motion.div>
-                  </>
+                  </div>
                 )}
               </AnimatePresence>
             </div>
@@ -543,6 +547,7 @@ export default function App() {
       <AnimatePresence>
         {isFormOpen && (
           <HandoverForm 
+            key="handover-form"
             onCancel={() => setIsFormOpen(false)} 
             onSubmit={handleSubmitHandover}
             initialData={editingHandover}
@@ -553,6 +558,7 @@ export default function App() {
 
         {isSettingsOpen && (
           <SettingsView 
+            key="settings-view"
             onClose={() => setIsSettingsOpen(false)}
             appUser={appUser}
             onUpdateUser={setAppUser}
@@ -560,7 +566,7 @@ export default function App() {
         )}
 
         {isSidebarOpen && (
-          <>
+          <div key="mobile-sidebar-container">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -605,21 +611,21 @@ export default function App() {
                 </button>
               </div>
             </motion.aside>
-          </>
+          </div>
         )}
         {/* Toast Notification */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 min-w-[300px] backdrop-blur-xl ${
-                toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                toast.type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
-                'bg-slate-800/80 border-white/10 text-slate-200'
-              }`}
-            >
+        {toast && (
+          <motion.div
+            key="toast-notification"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 min-w-[300px] backdrop-blur-xl ${
+              toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+              toast.type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+              'bg-slate-800/80 border-white/10 text-slate-200'
+            }`}
+          >
               <div className={`w-2 h-2 rounded-full ${
                 toast.type === 'success' ? 'bg-emerald-500' :
                 toast.type === 'error' ? 'bg-rose-500' :
@@ -628,7 +634,6 @@ export default function App() {
               <span className="text-sm font-bold tracking-tight">{toast.message}</span>
             </motion.div>
           )}
-        </AnimatePresence>
       </AnimatePresence>
     </div>
   );

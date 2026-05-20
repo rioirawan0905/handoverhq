@@ -250,7 +250,7 @@ export const HandoverList: React.FC<HandoverListProps> = ({ handovers, onEdit, o
                               <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Technical Assignees</p>
                               <div className="flex flex-wrap gap-1.5">
                                 {h.assignees.map((email, idx) => (
-                                  <span key={idx} className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] text-slate-400 font-bold">
+                                  <span key={`assignee-${h.id}-${idx}-${email}`} className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] text-slate-400 font-bold">
                                     {email}
                                   </span>
                                 ))}
@@ -333,7 +333,7 @@ export const HandoverList: React.FC<HandoverListProps> = ({ handovers, onEdit, o
                   <div className="flex items-center -space-x-2 ml-auto">
                     {h.assignees.slice(0, 4).map((email, idx) => (
                       <div 
-                        key={idx}
+                        key={`avatar-${h.id}-${idx}-${email}`}
                         title={email} 
                         className="w-8 h-8 rounded-full border-2 border-slate-950 bg-indigo-500/20 flex items-center justify-center text-[10px] font-black text-indigo-400 uppercase ring-1 ring-white/5"
                       >

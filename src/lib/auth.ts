@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { AppUser } from '../types';
+import { AppUser, AppTheme } from '../types';
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/gmail.send');
@@ -47,17 +47,33 @@ export const initAuth = (
         if (onAuthFailure) onAuthFailure();
       }
     } else if (!isSigningIn) {
-      // Use Anonymous Sign-In to give every guest a stable, persistent UID
-      // that survives browser refreshes.
+      // Use Anonymous Sign-In to give every guest a stable, persistent UID.
+      // If anonymous auth is disabled (auth/admin-restricted-operation), 
+      // we gracefully proceed to allow the app to function without a Firebase UID.
       signInAnonymously(auth).catch(error => {
-        console.error('Anonymous sign-in failed:', error);
-        if (onAuthFailure) onAuthFailure();
+        console.warn('Anonymous sign-in unavailable (likely disabled in Firebase Console):', error.code);
+        
+        // Final fallback: If anonymous auth fails, we trigger success with a null user
+        // so the app can still render for guests, even if Firestore writes might be restricted.
+        if (onAuthSuccess) {
+          const guestTheme = localStorage.getItem('hq_theme_preference') as AppTheme || 'slate';
+          onAuthSuccess(null, null, {
+            uid: 'guest_unauthenticated',
+            email: 'guest@hq.local',
+            name: 'HQ Operator (Guest)',
+            role: 'member',
+            themePreference: guestTheme,
+            createdAt: new Date(),
+          } as AppUser);
+        }
       });
     }
   });
 };
 
 export const getOrCreateAppUser = async (user: User, retries = 1): Promise<AppUser> => {
+  const localTheme = localStorage.getItem('hq_theme_preference') as AppTheme;
+
   try {
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     if (userDoc.exists()) {
@@ -68,6 +84,7 @@ export const getOrCreateAppUser = async (user: User, retries = 1): Promise<AppUs
         email: user.email || `guest_${user.uid.slice(0, 5)}@handoverhq.local`,
         name: user.displayName || 'HQ Operator',
         role: (user.email === 'yesaya.rio@gmail.com') ? 'admin' : 'member',
+        themePreference: localTheme || 'slate',
         createdAt: serverTimestamp(),
       };
       // Try to save, but don't block the return if it's slow
@@ -94,6 +111,7 @@ export const getOrCreateAppUser = async (user: User, retries = 1): Promise<AppUs
       email: user.email || `guest_${user.uid.slice(0, 5)}@handoverhq.local`,
       name: user.displayName || 'HQ Operator',
       role: (user.email === 'yesaya.rio@gmail.com') ? 'admin' : 'member',
+      themePreference: localTheme || 'slate',
       createdAt: new Date(),
     };
   }

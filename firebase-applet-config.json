@@ -1,9 +1,10 @@
 {
-  "projectId": "ivory-voyager-38gvj",
-  "appId": "1:61951571273:web:a707295113e8e8a49ed698",
-  "apiKey": "AIzaSyAu6svmO0UxOd2mN-WIqH8a_FqY6UlLFQw",
-  "authDomain": "ivory-voyager-38gvj.firebaseapp.com",
-  "storageBucket": "ivory-voyager-38gvj.firebasestorage.app",
-  "messagingSenderId": "61951571273",
+  "projectId": "gen-lang-client-0077633187",
+  "appId": "1:161108139264:web:a50288ec678045e97a67e5",
+  "apiKey": "AIzaSyDNHXPyWa3WF1shREJdaOx6lu179ZflRdE",
+  "authDomain": "gen-lang-client-0077633187.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-9c4e893b-e85e-4010-9967-85de947ffeaf",
+  "storageBucket": "gen-lang-client-0077633187.firebasestorage.app",
+  "messagingSenderId": "161108139264",
   "measurementId": ""
 }

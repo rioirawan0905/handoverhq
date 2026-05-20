@@ -21,13 +21,22 @@ const THEMES: { id: AppTheme; name: string; icon: any; colors: string }[] = [
 export const Settings: React.FC<SettingsProps> = ({ onClose, appUser, onUpdateUser }) => {
   const handleThemeChange = async (theme: AppTheme) => {
     if (!appUser) return;
+    
+    // Always update local state immediately for responsiveness
+    onUpdateUser({ ...appUser, themePreference: theme });
+    
+    // Persist to localStorage for guests or as a backup
+    localStorage.setItem('hq_theme_preference', theme);
+
     try {
-      await updateDoc(doc(db, 'users', appUser.uid), {
-        themePreference: theme
-      });
-      onUpdateUser({ ...appUser, themePreference: theme });
+      // Only try to update Firestore if we have a real UID (not the guest fallback)
+      if (appUser.uid && appUser.uid !== 'guest_unauthenticated') {
+        await updateDoc(doc(db, 'users', appUser.uid), {
+          themePreference: theme
+        });
+      }
     } catch (error) {
-      console.error('Failed to update theme:', error);
+      console.warn('Sync to cloud failed, but theme updated locally:', error);
     }
   };
 

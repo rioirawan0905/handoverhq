@@ -138,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ handovers, user, onLogin }
                 />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                    <Cell key={`priority-cell-${index}`} fill={entry.color} fillOpacity={0.8} />
                   ))}
                 </Bar>
               </BarChart>
@@ -167,7 +167,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ handovers, user, onLogin }
                     dataKey="value"
                   >
                     {subTaskData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.6} stroke="rgba(255,255,255,0.1)" strokeWidth={2} />
+                      <Cell key={`task-cell-${index}`} fill={entry.color} fillOpacity={0.6} stroke="rgba(255,255,255,0.1)" strokeWidth={2} />
                     ))}
                   </Pie>
                   <Tooltip 
