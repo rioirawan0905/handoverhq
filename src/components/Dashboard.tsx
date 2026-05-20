@@ -12,14 +12,17 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { Clock, AlertTriangle, CheckCircle, List } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle, List, ShieldAlert, ExternalLink } from 'lucide-react';
 import { isBefore, parseISO, startOfToday } from 'date-fns';
+import { motion } from 'motion/react';
 
 interface DashboardProps {
   handovers: Handover[];
+  user: any;
+  onLogin: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ handovers }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ handovers, user, onLogin }) => {
   const stats = useMemo(() => {
     const today = startOfToday();
     const routine = handovers.filter(h => h.status === 'routine');
@@ -66,6 +69,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ handovers }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {user?.isAnonymous && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-4 text-center md:text-left">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+              <ShieldAlert className="w-6 h-6 text-indigo-400" />
+            </div>
+            <div>
+              <h4 className="text-white font-bold tracking-tight">Guest Profile Detected</h4>
+              <p className="text-xs text-slate-400 font-medium">Your operational logs are currently restricted to this device. Synchronize with HQ to enable cross-device access and Gmail integration.</p>
+            </div>
+          </div>
+          <button 
+            onClick={onLogin}
+            className="flex items-center gap-2 bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20 whitespace-nowrap group"
+          >
+            Authenticate Profile <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard 
           icon={<List className="w-6 h-6 text-indigo-400" />} 

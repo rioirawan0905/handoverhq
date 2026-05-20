@@ -10,18 +10,33 @@ interface AuthScreenProps {
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, isLoading, setIsLoading }) => {
+  const [error, setError] = React.useState<string | null>(null);
+  const isInIframe = window.self !== window.top;
+
   const handleLogin = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const result = await googleSignIn();
       if (result) {
         onLogin(result);
       }
-    } catch (error) {
-      console.error('Login failed:', error);
+    } catch (err: any) {
+      console.error('Login failed:', err);
+      if (err.code === 'auth/popup-blocked') {
+        setError('Popup was blocked. Please enable popups or open in a new tab.');
+      } else if (err.code === 'auth/internal-error' || err.code === 'auth/network-request-failed') {
+        setError('Network connectivity issue. Please check your connection.');
+      } else {
+        setError(err.message || 'Authentication failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const openInNewTab = () => {
+    window.open(window.location.href, '_blank');
   };
 
   return (
@@ -45,7 +60,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, isLoading, setI
           </p>
         </div>
         
-        <div className="mt-10">
+        <div className="mt-10 space-y-4">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl"
+            >
+              <p className="text-xs font-bold text-rose-400 leading-relaxed">
+                {error}
+              </p>
+            </motion.div>
+          )}
+
           <button
             onClick={handleLogin}
             disabled={isLoading}
@@ -75,6 +102,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, isLoading, setI
               {isLoading ? 'Establishing Session...' : 'Authenticate with Google'}
             </span>
           </button>
+
+          {isInIframe && (
+            <button
+              onClick={openInNewTab}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-500/10 text-indigo-400 font-bold rounded-xl hover:bg-indigo-500/20 border border-indigo-500/20 transition-all duration-300"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              <span className="text-[10px] uppercase tracking-widest">Open in New Tab</span>
+            </button>
+          )}
         </div>
 
         <div className="mt-8 pt-8 border-t border-white/5">

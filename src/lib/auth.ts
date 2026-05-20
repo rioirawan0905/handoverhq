@@ -127,3 +127,11 @@ export const logout = async () => {
   await signOut(auth);
   cachedAccessToken = null;
 };
+
+export const isIframe = (): boolean => {
+  try {
+    return window.self !== window.top;
+  } catch (e) {
+    return true;
+  }
+};

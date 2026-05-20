@@ -323,6 +323,25 @@ export default function App() {
     }
   };
 
+  const handleLoginWithGoogle = async () => {
+    try {
+      showToast('Connecting to HQ Security...', 'info');
+      const result = await googleSignIn();
+      if (result) {
+        setUser(result.user);
+        setAppUser(result.appUser);
+        showToast('Mission profile synchronized.', 'success');
+      }
+    } catch (e: any) { 
+      console.error(e);
+      if (e.code === 'auth/popup-blocked') {
+        showToast('Popup blocked. Please open in a new tab.', 'error');
+      } else {
+        showToast('Authentication failed.', 'error');
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -444,20 +463,7 @@ export default function App() {
           
           {!getAccessToken() ? (
             <button 
-              onClick={async () => {
-                try {
-                  showToast('Connecting to Gmail...', 'info');
-                  const result = await googleSignIn();
-                  if (result) {
-                    setUser(result.user);
-                    setAppUser(result.appUser);
-                    showToast('Gmail integration enabled.', 'success');
-                  }
-                } catch (e) { 
-                  console.error(e);
-                  showToast('Failed to connect Gmail.', 'error');
-                }
-              }}
+              onClick={handleLoginWithGoogle}
               className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 bg-indigo-500/10 text-indigo-400 font-bold rounded-xl hover:bg-indigo-500/20 border border-indigo-500/20 transition-all duration-300 group"
             >
               <SettingsIcon className="w-4 h-4" /> Enable Gmail API
@@ -556,7 +562,7 @@ export default function App() {
 
         <div className="p-6 lg:p-10 max-w-7xl mx-auto">
           {view === 'dashboard' ? (
-            <Dashboard handovers={handovers} />
+            <Dashboard handovers={handovers} user={user} onLogin={handleLoginWithGoogle} />
           ) : (
             <HandoverList 
               handovers={handovers} 
