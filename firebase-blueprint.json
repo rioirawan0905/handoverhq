@@ -9,9 +9,31 @@
         "email": { "type": "string" },
         "name": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "member", "viewer"] },
+        "themePreference": { "type": "string", "enum": ["slate", "obsidian", "midnight", "ocean"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role"]
+    },
+    "Personnel": {
+      "title": "Personnel",
+      "description": "Personnel involved in handover",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "email": { "type": "string" }
+      }
+    },
+    "SubTask": {
+      "title": "SubTask",
+      "description": "Inner task item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["in-progress", "delayed", "done"] }
+      }
     },
     "Handover": {
       "title": "Handover",
@@ -21,12 +43,15 @@
         "id": { "type": "string" },
         "title": { "type": "string" },
         "content": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "in progress", "done"] },
-        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["routine", "urgent"] },
+        "dueDate": { "type": "string" },
         "creatorId": { "type": "string" },
         "creatorEmail": { "type": "string" },
         "assignees": { "type": "array", "items": { "type": "string" } },
         "remarks": { "type": "string" },
+        "outgoingPersonnel": { "$ref": "Personnel" },
+        "incomingPersonnel": { "$ref": "Personnel" },
+        "subTasks": { "type": "array", "items": { "$ref": "SubTask" } },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -39,6 +64,7 @@
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string" },
+        "title": { "type": "string" },
         "message": { "type": "string" },
         "type": { "type": "string" },
         "read": { "type": "boolean" },

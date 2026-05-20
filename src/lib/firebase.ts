@@ -6,5 +6,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
+  // Explicitly disable persistence to prevent "stale" offline errors on boot
+  // for real-time operational shift logs as requested.
 });
 export const auth = getAuth(app);

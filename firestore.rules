@@ -6,60 +6,79 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // 3. Global Helpers
+    // 2. Global Primitives & Helpers
     function isSignedIn() { return request.auth != null; }
-    function isEmailVerified() { return request.auth.token.email_verified == true; }
-    function isAdmin() { return isSignedIn() && request.auth.token.email == 'yesaya.rio@gmail.com'; }
-    function isMember() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'member']; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && (request.auth.token.email == 'yesaya.rio@gmail.com' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'); }
+    
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
 
-    // 2. Validation Blueprints
+    // 3. Validation Blueprints
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
-             data.keys().size() <= 6 &&
-             data.role in ['admin', 'member', 'viewer'];
+             data.uid == request.auth.uid &&
+             data.role in ['admin', 'member', 'viewer'] &&
+             data.email is string && data.email.size() <= 100 &&
+             data.name is string && data.name.size() <= 100;
+    }
+
+    function isValidPersonnel(p) {
+      return p.keys().hasAll(['name', 'title', 'email']) &&
+             p.name is string && p.name.size() <= 100 &&
+             p.email is string && p.email.size() <= 100;
     }
 
     function isValidHandover(data) {
       return data.keys().hasAll(['title', 'status', 'creatorId', 'createdAt']) &&
              data.title is string && data.title.size() <= 200 &&
-             data.status in ['pending', 'in progress', 'done'] &&
+             data.status in ['routine', 'urgent'] &&
              data.creatorId == request.auth.uid &&
-             (data.keys().hasAny(['content']) ? data.content is string && data.content.size() <= 5000 : true);
+             (data.keys().hasAny(['content']) ? data.content is string && data.content.size() <= 5000 : true) &&
+             (data.keys().hasAny(['remarks']) ? data.remarks is string && data.remarks.size() <= 1000 : true) &&
+             (data.keys().hasAny(['outgoingPersonnel']) ? isValidPersonnel(data.outgoingPersonnel) : true) &&
+             (data.keys().hasAny(['incomingPersonnel']) ? isValidPersonnel(data.incomingPersonnel) : true) &&
+             (data.keys().hasAny(['subTasks']) ? data.subTasks is list && data.subTasks.size() <= 50 : true);
     }
 
     function isValidNotification(data) {
-      return data.keys().hasAll(['userId', 'message', 'read', 'createdAt']) &&
+      return data.keys().hasAll(['userId', 'title', 'message', 'read', 'createdAt']) &&
              data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 100 &&
              data.message is string && data.message.size() <= 500 &&
-             data.read == false;
+             data.read is bool;
     }
 
     // 4. Collection Matches
+    
+    // User Profiles
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && userId == request.auth.uid && isValidUser(incoming());
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role == 'member';
+      allow update: if isOwner(userId) && (
+        // Only allow changing theme or basic info, never role
+        incoming().diff(existing()).affectedKeys().hasOnly(['themePreference', 'name'])
+      ) || isAdmin();
     }
 
+    // Handover authorizations
     match /handovers/{handoverId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidHandover(incoming());
+      allow create: if isSignedIn() && isValidHandover(incoming()) && incoming().createdAt == request.time;
       allow update: if isSignedIn() && (
-        (existing().creatorId == request.auth.uid || isAdmin()) ||
-        (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'remarks', 'updatedAt']))
+        (existing().creatorId == request.auth.uid && isValidHandover(incoming()) && incoming().updatedAt == request.time) ||
+        isAdmin()
       );
-      allow delete: if isSignedIn() && (existing().creatorId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin() || (isSignedIn() && existing().creatorId == request.auth.uid);
     }
 
+    // User Notifications
     match /users/{userId}/notifications/{notificationId} {
-      allow read: if isSignedIn() && userId == request.auth.uid;
-      allow create: if false; // System generated or specific rules
-      allow update: if isSignedIn() && userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
-      allow delete: if isSignedIn() && userId == request.auth.uid;
+      allow read, delete: if isOwner(userId);
+      allow update: if isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow create: if isSignedIn() && isValidNotification(incoming());
     }
   }
 }
