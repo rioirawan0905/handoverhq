@@ -220,7 +220,7 @@ export default function App() {
         <div style="border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;">
           <p style="font-size: 11px; color: #94a3b8; font-weight: 500;">
             This document is an official operational handover authorization.<br/>
-            Ref: #${handover.id || 'NEW'} | Authorized by ${appUser.name}
+            Ref: #${handover.id || 'NEW'} | Authorized by ${appUser?.name || 'Guest Operator'}
           </p>
         </div>
       </div>
@@ -254,7 +254,8 @@ export default function App() {
     }
   };
 
-  const markNotificationRead = async (id: string) => {
+   const markNotificationRead = async (id: string) => {
+    if (!user) return;
     try {
       await updateDoc(doc(db, `users/${user.uid}/notifications`, id), {
         read: true
@@ -279,7 +280,7 @@ export default function App() {
         const docRef = await addDoc(collection(db, 'handovers'), {
           ...data,
           creatorId: user.uid,
-          creatorEmail: appUser.email,
+          creatorEmail: appUser?.email || user.email || 'guest@hq.local',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -350,60 +351,6 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return (
-      <AuthScreen 
-        onLogin={(result) => {
-          setUser(result.user);
-          setAppUser(result.appUser);
-        }}
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
-      />
-    );
-  }
-
-  if (!appUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="w-20 h-20 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex items-center justify-center mx-auto">
-            <X className="w-10 h-10 text-rose-500" />
-          </div>
-          <h2 className="text-3xl font-black text-white tracking-tight">Sync Failure</h2>
-          <p className="text-slate-400 font-medium leading-relaxed">
-            The application failed to synchronize your secure mission profile. This usually occurs during network fluctuations or security handshake delays.
-          </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="w-full py-4 bg-white/5 text-white font-bold rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
-          >
-            Reconnect to HQ
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isDbConnecting && handovers.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
-        <div className="text-center space-y-8">
-          <div className="relative">
-            <div className="w-20 h-20 border-2 border-indigo-500/20 rounded-full mx-auto"></div>
-            <div className="absolute inset-0 w-20 h-20 border-t-2 border-indigo-400 rounded-full animate-spin mx-auto"></div>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold text-white uppercase tracking-widest">Establishing Security</h2>
-            <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em] animate-pulse">
-              Syncing with secure database connection...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -446,20 +393,31 @@ export default function App() {
 
         <div className="mt-auto p-8 border-t border-white/10">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden">
-              {user.photoURL ? <img src={user.photoURL} alt="" referrerPolicy="no-referrer" /> : <UserIcon className="w-5 h-5 text-slate-400" />}
+            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden text-slate-400">
+              {user?.photoURL ? <img src={user.photoURL} alt="" referrerPolicy="no-referrer" /> : <UserIcon className="w-5 h-5 text-slate-400" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate tracking-tight">{appUser.name}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">{appUser.role}</p>
+              <p className="text-sm font-bold text-white truncate tracking-tight">{appUser?.name || 'Guest'}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">{appUser?.role || 'Guest'}</p>
             </div>
           </div>
-          <button 
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/5 text-slate-400 font-bold rounded-xl hover:bg-rose-500/10 hover:text-rose-500 border border-white/10 transition-all duration-300 group"
-          >
-            <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> Reset Session
-          </button>
+          {user && !user.isAnonymous && (
+            <button 
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/5 text-slate-400 font-bold rounded-xl hover:bg-rose-500/10 hover:text-rose-500 border border-white/10 transition-all duration-300 group"
+            >
+              <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> Reset Session
+            </button>
+          )}
+
+          {(!user || user.isAnonymous) && (
+            <button 
+              onClick={handleLoginWithGoogle}
+              className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 transition-all duration-300 group"
+            >
+              <UserIcon className="w-4 h-4" /> Sign In
+            </button>
+          )}
           
           {!getAccessToken() ? (
             <button 

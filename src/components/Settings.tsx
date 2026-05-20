@@ -7,7 +7,7 @@ import { db } from '../lib/firebase';
 
 interface SettingsProps {
   onClose: () => void;
-  appUser: AppUser;
+  appUser: AppUser | null;
   onUpdateUser: (user: AppUser) => void;
 }
 
@@ -20,6 +20,7 @@ const THEMES: { id: AppTheme; name: string; icon: any; colors: string }[] = [
 
 export const Settings: React.FC<SettingsProps> = ({ onClose, appUser, onUpdateUser }) => {
   const handleThemeChange = async (theme: AppTheme) => {
+    if (!appUser) return;
     try {
       await updateDoc(doc(db, 'users', appUser.uid), {
         themePreference: theme
@@ -73,7 +74,7 @@ export const Settings: React.FC<SettingsProps> = ({ onClose, appUser, onUpdateUs
                   key={theme.id}
                   onClick={() => handleThemeChange(theme.id)}
                   className={`relative p-4 rounded-2xl border transition-all duration-300 text-left group overflow-hidden ${
-                    appUser.themePreference === theme.id 
+                    appUser?.themePreference === theme.id 
                       ? 'border-indigo-500 bg-indigo-500/10' 
                       : 'border-white/5 bg-white/5 hover:border-white/20'
                   }`}
@@ -82,19 +83,19 @@ export const Settings: React.FC<SettingsProps> = ({ onClose, appUser, onUpdateUs
                   
                   <div className="relative flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                      appUser.themePreference === theme.id ? 'bg-indigo-500 text-white' : 'bg-white/10 text-slate-400 group-hover:text-slate-200'
+                      appUser?.themePreference === theme.id ? 'bg-indigo-500 text-white' : 'bg-white/10 text-slate-400 group-hover:text-slate-200'
                     }`}>
                       <theme.icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
-                      <span className={`block text-sm font-bold tracking-tight ${appUser.themePreference === theme.id ? 'text-white' : 'text-slate-300'}`}>
+                      <span className={`block text-sm font-bold tracking-tight ${appUser?.themePreference === theme.id ? 'text-white' : 'text-slate-300'}`}>
                         {theme.name}
                       </span>
-                      {appUser.themePreference === theme.id && (
+                      {appUser?.themePreference === theme.id && (
                         <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Active Choice</span>
                       )}
                     </div>
-                    {appUser.themePreference === theme.id && (
+                    {appUser?.themePreference === theme.id && (
                       <Check className="w-5 h-5 text-indigo-400" />
                     )}
                   </div>

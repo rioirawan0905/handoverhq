@@ -9,7 +9,7 @@ interface HandoverFormProps {
   onSubmit: (data: Partial<Handover>, sendEmail: boolean) => void;
   onCancel: () => void;
   initialData?: Handover;
-  appUser: AppUser;
+  appUser: AppUser | null;
   handovers: Handover[];
 }
 
