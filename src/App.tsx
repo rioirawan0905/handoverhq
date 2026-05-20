@@ -21,6 +21,7 @@ import { Dashboard } from './components/Dashboard';
 import { HandoverList } from './components/HandoverList';
 import { HandoverForm } from './components/HandoverForm';
 import { Settings as SettingsView } from './components/Settings';
+import { AuthScreen } from './components/AuthScreen';
 import { AppUser, Handover, Notification, AppTheme } from './types';
 import { 
   LayoutDashboard, 
@@ -264,10 +265,6 @@ export default function App() {
   };
 
   const handleSubmitHandover = async (data: Partial<Handover>, sendEmail: boolean) => {
-    if (sendEmail && !confirm('WARNING: This will send automated security emails to all assignees. Proceed?')) {
-      return;
-    }
-    
     try {
       showToast('Saving handover authorization...', 'info');
       
@@ -334,17 +331,36 @@ export default function App() {
     );
   }
 
-  if (!user || !appUser) {
+  if (!user) {
+    return (
+      <AuthScreen 
+        onLogin={(result) => {
+          setUser(result.user);
+          setAppUser(result.appUser);
+        }}
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+      />
+    );
+  }
+
+  if (!appUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="w-20 h-20 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex items-center justify-center mx-auto">
             <X className="w-10 h-10 text-rose-500" />
           </div>
-          <h2 className="text-3xl font-black text-white tracking-tight">Configuration Error</h2>
+          <h2 className="text-3xl font-black text-white tracking-tight">Sync Failure</h2>
           <p className="text-slate-400 font-medium leading-relaxed">
-            The application failed to initialize a secure mission session. Please refresh your browser or contact HQ.
+            The application failed to synchronize your secure mission profile. This usually occurs during network fluctuations or security handshake delays.
           </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full py-4 bg-white/5 text-white font-bold rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
+          >
+            Reconnect to HQ
+          </button>
         </div>
       </div>
     );

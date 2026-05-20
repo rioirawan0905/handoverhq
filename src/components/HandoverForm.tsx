@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppUser, Handover, HandoverStatus, SubTask, Personnel } from '../types';
 import { getAccessToken } from '../lib/auth';
 import { Calendar, UserPlus, X, Send, Save, Plus, Trash2, User, Users, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { DRILLING_PERSONNEL } from '../data/personnel';
 
 interface HandoverFormProps {
@@ -29,6 +30,15 @@ export const HandoverForm: React.FC<HandoverFormProps> = ({ onSubmit, onCancel, 
   
   const [newSubTaskTitle, setNewSubTaskTitle] = useState('');
   const [newSubTaskDate, setNewSubTaskDate] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  const getRecipients = () => {
+    return Array.from(new Set([
+      ...assignees,
+      ...(outgoingPersonnel?.email ? [outgoingPersonnel.email] : []),
+      ...(incomingPersonnel?.email ? [incomingPersonnel.email] : [])
+    ])).filter(Boolean);
+  };
 
   const handleImportPendingTasks = () => {
     // Find all subtasks in previous handovers that are not marked as 'done'
@@ -87,6 +97,14 @@ export const HandoverForm: React.FC<HandoverFormProps> = ({ onSubmit, onCancel, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (sendEmail) {
+      setIsConfirming(true);
+    } else {
+      executeSubmit();
+    }
+  };
+
+  const executeSubmit = () => {
     onSubmit({
       title,
       content,
@@ -98,6 +116,7 @@ export const HandoverForm: React.FC<HandoverFormProps> = ({ onSubmit, onCancel, 
       incomingPersonnel,
       subTasks,
     }, sendEmail);
+    setIsConfirming(false);
   };
 
   return (
@@ -306,6 +325,66 @@ export const HandoverForm: React.FC<HandoverFormProps> = ({ onSubmit, onCancel, 
             </button>
           </div>
         </form>
+
+        <AnimatePresence>
+          {isConfirming && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-[60] animate-in fade-in duration-200">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-slate-900 border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl space-y-6"
+              >
+                <div className="flex items-center gap-4 text-rose-400">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+                    <Send className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white tracking-tight">Final Authorization</h3>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Review Recipients</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    By confirming, an official operational handover notice will be broadcasted to the following personnel:
+                  </p>
+                  
+                  <div className="bg-white/5 rounded-2xl border border-white/5 p-4 space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    {getRecipients().length > 0 ? (
+                      getRecipients().map(email => (
+                        <div key={email} className="flex items-center gap-2 text-xs font-bold text-indigo-400">
+                          <div className="w-1 h-1 bg-indigo-500 rounded-full" />
+                          <span className="truncate">{email}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[10px] text-rose-500 font-black uppercase text-center py-2">No recipients detected</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirming(false)}
+                    className="flex-1 py-3 px-4 bg-white/5 text-slate-400 font-bold rounded-xl border border-white/10 hover:bg-white/10 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={executeSubmit}
+                    disabled={getRecipients().length === 0}
+                    className="flex-1 py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 disabled:opacity-50 disabled:grayscale transition-all shadow-lg shadow-indigo-500/20"
+                  >
+                    Confirm & Send
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
